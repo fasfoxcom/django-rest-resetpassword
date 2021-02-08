@@ -8,6 +8,7 @@ from django.contrib.auth.password_validation import (
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from django.conf import settings
+from django.db.models import Q
 from rest_framework import status, serializers, exceptions
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -21,7 +22,6 @@ from django_rest_resetpassword.models import (
     ResetPasswordToken,
     clear_expired,
     get_password_reset_token_expiry_time,
-    get_password_reset_lookup_field,
 )
 from django_rest_resetpassword.signals import (
     reset_password_token_created,
@@ -175,8 +175,7 @@ class ResetPasswordRequestToken(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data.get("email")
-        username = serializer.validated_data.get("username")
+        email_or_username = serializer.validated_data.get("email_or_username")
 
         # before we continue, delete all existing expired tokens
         password_reset_token_validation_time = get_password_reset_token_expiry_time()
@@ -191,8 +190,8 @@ class ResetPasswordRequestToken(GenericAPIView):
 
         # find a user by username or email address (case insensitive search)
         users = User.objects.filter(
-            **{"{}__iexact".format(get_password_reset_lookup_field()): email}
-        ) | User.objects.filter(**{"{}__iexact".format("username"): username})
+            Q(email__iexact=email_or_username) | Q(username__iexact=email_or_username)
+        )
 
         active_user_found = False
 
