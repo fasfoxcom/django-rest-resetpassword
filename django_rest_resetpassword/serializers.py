@@ -1,6 +1,4 @@
 from django.utils.translation import ugettext_lazy as _
-from django_rest_resetpassword.models import get_password_reset_lookup_fields
-from django.core.validators import EmailValidator, ValidationError
 
 from rest_framework import serializers
 
@@ -12,17 +10,9 @@ __all__ = [
 
 
 class EmailSerializer(serializers.Serializer):
-    email_or_username = serializers.CharField()
-
-    def validate_email_or_username(self, value):
-        print(get_password_reset_lookup_fields)
-        if get_password_reset_lookup_fields() == ["email"]:
-            try:
-                validator = EmailValidator()
-                validator(value)
-            except ValidationError as ve:
-                raise ve
-        return value
+    # This field can contains either a username or an email
+    # but for backward compatibility the field name is kept.
+    email = serializers.CharField()
 
 
 class PasswordTokenSerializer(serializers.Serializer):

@@ -175,7 +175,7 @@ class ResetPasswordRequestToken(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email_or_username = serializer.validated_data.get("email_or_username")
+        email_or_username = serializer.validated_data.get("email")
 
         # before we continue, delete all existing expired tokens
         password_reset_token_validation_time = get_password_reset_token_expiry_time()
@@ -211,7 +211,7 @@ class ResetPasswordRequestToken(GenericAPIView):
                 {
                     "email": [
                         _(
-                            "There is no active user associated with this e-mail address or the password can not be changed"
+                            "There is no active user associated with this e-mail address or username or the password can not be changed"
                         )
                     ],
                 }
@@ -244,7 +244,6 @@ class ResetPasswordRequestToken(GenericAPIView):
         response_format[
             "message"
         ] = "A password reset token has been sent to the provided email address"
-        response_format["data"].append(user.email)
         response_format["status"] = True
         response_format["error"] = []
         return Response(response_format)
