@@ -90,6 +90,18 @@ def get_password_reset_lookup_field():
     return getattr(settings, "DJANGO_REST_LOOKUP_FIELD", "email")
 
 
+def get_password_reset_lookup_fields():
+    """
+    Returns the password reset lookup fields
+    Set Django SETTINGS.DJANGO_REST_LOOKUP_FIELDS to overwrite this time
+    :return: lookup fields. If not specified, the default DJANGO_REST_LOOKUP_FIELD
+    is used by default.
+    """
+    return getattr(
+        settings, "DJANGO_REST_LOOKUP_FIELDS", [get_password_reset_lookup_field()]
+    )
+
+
 def clear_expired(expiry_time):
     """
     Remove all expired tokens

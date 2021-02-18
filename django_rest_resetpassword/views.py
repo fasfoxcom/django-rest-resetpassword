@@ -22,6 +22,7 @@ from django_rest_resetpassword.models import (
     ResetPasswordToken,
     clear_expired,
     get_password_reset_token_expiry_time,
+    get_password_reset_lookup_fields,
 )
 from django_rest_resetpassword.signals import (
     reset_password_token_created,
@@ -175,7 +176,7 @@ class ResetPasswordRequestToken(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email_or_username = serializer.validated_data.get("email")
+        email = serializer.validated_data.get("email")
 
         # before we continue, delete all existing expired tokens
         password_reset_token_validation_time = get_password_reset_token_expiry_time()
@@ -188,10 +189,17 @@ class ResetPasswordRequestToken(GenericAPIView):
         # delete all tokens where created_at < now - 24 hours
         clear_expired(now_minus_expiry_time)
 
-        # find a user by username or email address (case insensitive search)
-        users = User.objects.filter(
-            Q(email__iexact=email_or_username) | Q(username__iexact=email_or_username)
-        )
+        # construct the condition
+        # q = Q(username__iexact=email) | Q(email__iexact=email)
+
+        # the hack is from https://stackoverflow.com/questions/28610144/q-object-parameters
+        filters = get_password_reset_lookup_fields()
+        filter_params = Q()
+        for filter_obj in filters:
+            filter_params |= Q(**{filter_obj: email})
+
+        # find a user by  specified resetting field(case insensitive search)
+        users = User.objects.filter(filter_params)
 
         active_user_found = False
 
